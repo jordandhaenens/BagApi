@@ -34,10 +34,29 @@ namespace bagAPI.Controllers
         }
 
         // GET api/values/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+        [HttpGet("{id}", Name = "GetToy")]
+        public IActionResult Get([FromRoute] int id)
         {
-            return "value";
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                Toy toy = _context.Toy.Single(m => m.ToyId == id);
+
+                if (toy == null)
+                {
+                    return NotFound();
+                }
+                
+                return Ok(toy);
+            }
+            catch (System.InvalidOperationException ex)
+            {
+                return NotFound();
+            }
         }
 
         // POST api/values
@@ -77,14 +96,58 @@ namespace bagAPI.Controllers
 
         // PUT api/values/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody]string value)
+        public IActionResult Put(int id, [FromBody] Toy toy)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (id != toy.ToyId)
+            {
+                return BadRequest();
+            }
+
+            _context.Entry(toy).State = EntityState.Modified;
+
+            try
+            {
+                _context.SaveChanges();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!ToyExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return new StatusCodeResult(StatusCodes.Status204NoContent);
         }
 
         // DELETE api/values/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public IActionResult Delete(int id)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            Toy toy = _context.Toy.Single(m => m.ToyId == id);
+            if (toy == null)
+            {
+                return NotFound();
+            }
+
+            _context.Toy.Remove(toy);
+            _context.SaveChanges();
+
+            return Ok(toy);
         }
     }
 }
